@@ -1,2 +1,46 @@
 __pycache__/
 *.pyc
+
+# Virtual environments
+.venv/
+venv/
+
+# Distribution/build folders
+build/
+dist/
+*.egg-info/
+
+# Pytest cache
+.pytest_cache/
+
+# Mypy cache
+.mypy_cache/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Environment variables file
+.env
+
+# MacOS
+.DS_Store
+
+# Editor directories and files
+.vscode/
+.idea/
+
+# Data and artifacts
+artifacts/
+*/artifacts/
+
+# logs
+*.log
+
+# temporary files
+*.tmp
+*.temp
+
+# coverage reports
+htmlcov/
+.coverage
+coverage.xml
