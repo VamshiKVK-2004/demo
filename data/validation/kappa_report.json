@@ -1,0 +1,41 @@
+{
+  "source": "data/manual_labels.csv",
+  "rater_columns": [
+    "rater_1",
+    "rater_2",
+    "rater_3"
+  ],
+  "pairwise": [],
+  "interpretation_bands": [
+    {
+      "min": -1.0,
+      "max": 0.0,
+      "label": "poor"
+    },
+    {
+      "min": 0.0,
+      "max": 0.2,
+      "label": "slight"
+    },
+    {
+      "min": 0.21,
+      "max": 0.4,
+      "label": "fair"
+    },
+    {
+      "min": 0.41,
+      "max": 0.6,
+      "label": "moderate"
+    },
+    {
+      "min": 0.61,
+      "max": 0.8,
+      "label": "substantial"
+    },
+    {
+      "min": 0.81,
+      "max": 1.0,
+      "label": "almost perfect"
+    }
+  ]
+}
