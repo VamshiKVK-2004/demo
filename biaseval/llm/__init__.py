@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 import uuid
 from pathlib import Path
@@ -13,7 +14,7 @@ import yaml
 
 from biaseval.llm.gemini_client import GeminiClient
 from biaseval.llm.openai_client import OpenAIClient
-from biaseval.schema import validate_raw_response_schema
+from biaseval.schema import RAW_RESPONSE_COLUMNS, validate_raw_response_schema
 
 TEMPERATURES = [0.0, 0.3, 0.7]
 MAX_RETRIES = 3
@@ -22,6 +23,14 @@ MIN_INTERVAL_BY_PROVIDER_S = {
     "openai": 0.75,
     "gemini": 1.0,
 }
+
+
+def _provider_has_credentials(provider: str) -> bool:
+    if provider == "openai":
+        return bool(os.getenv("OPENAI_API_KEY"))
+    if provider == "gemini":
+        return bool(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"))
+    return False
 
 
 def _load_prompts(path: Path) -> list[dict[str, Any]]:
@@ -37,7 +46,10 @@ def _load_experiments(path: Path) -> list[dict[str, Any]]:
 
 def _persist_results(rows: list[dict[str, Any]], output_dir: Path) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
-    df = validate_raw_response_schema(pd.DataFrame(rows))
+    if rows:
+        df = validate_raw_response_schema(pd.DataFrame(rows))
+    else:
+        df = pd.DataFrame(columns=RAW_RESPONSE_COLUMNS)
     parquet_path = output_dir / "raw_responses.parquet"
     try:
         df.to_parquet(parquet_path, index=False)
@@ -70,6 +82,9 @@ def run() -> None:
         if provider not in clients:
             print(f"[biaseval] skipping unknown provider: {provider}")
             continue
+        if not _provider_has_credentials(provider):
+            print(f"[biaseval] skipping provider {provider}: missing credentials")
+            continue
 
         client = clients[provider]
         min_interval_s = MIN_INTERVAL_BY_PROVIDER_S.get(provider, 0.5)
@@ -90,7 +105,10 @@ def run() -> None:
                         temperature=temperature,
                         seed=42,
                     )
-                    if not result.get("error"):
+                    error = (result or {}).get("error") or ""
+                    if not error:
+                        break
+                    if error.startswith("missing "):
                         break
                     if attempt < MAX_RETRIES - 1:
                         time.sleep(BACKOFF_BASE_S**attempt)
