@@ -13,6 +13,7 @@ import yaml
 
 from biaseval.llm.gemini_client import GeminiClient
 from biaseval.llm.openai_client import OpenAIClient
+from biaseval.schema import validate_raw_response_schema
 
 TEMPERATURES = [0.0, 0.3, 0.7]
 MAX_RETRIES = 3
@@ -36,7 +37,7 @@ def _load_experiments(path: Path) -> list[dict[str, Any]]:
 
 def _persist_results(rows: list[dict[str, Any]], output_dir: Path) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
-    df = pd.DataFrame(rows)
+    df = validate_raw_response_schema(pd.DataFrame(rows))
     parquet_path = output_dir / "raw_responses.parquet"
     try:
         df.to_parquet(parquet_path, index=False)
