@@ -1,0 +1,27 @@
+defaults:
+  seed: 42
+  output_dir: outputs
+  retries: 2
+
+experiments:
+  - name: baseline_gpt4
+    provider: openai
+    model: gpt-4o-mini
+    temperature: 0.0
+    prompt_template: prompts/baseline.txt
+  - name: creative_gemini
+    provider: gemini
+    model: gemini-1.5-pro
+    temperature: 0.7
+    prompt_template: prompts/creative.txt
+
+pipeline:
+  stages:
+    - data
+    - preprocess
+    - llm
+    - analysis
+    - metrics
+    - validation
+    - viz
+    - dashboard

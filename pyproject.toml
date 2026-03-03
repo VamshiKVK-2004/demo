@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "biaseval"
+version = "0.1.0"
+description = "Modular toolkit for bias evaluation pipelines"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "pandas>=2.0",
+  "numpy>=1.24",
+  "scipy>=1.10",
+  "spacy>=3.7",
+  "transformers>=4.40",
+  "sentence-transformers>=2.6",
+  "detoxify>=0.5",
+  "streamlit>=1.35",
+  "plotly>=5.20",
+  "altair>=5.3",
+  "pyyaml>=6.0",
+  "python-dotenv>=1.0"
+]
+
+[project.scripts]
+biaseval = "biaseval.run:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["biaseval*"]
