@@ -21,7 +21,6 @@ dist/
 
 # Environment variables file
 .env
-
 # MacOS
 .DS_Store
 
