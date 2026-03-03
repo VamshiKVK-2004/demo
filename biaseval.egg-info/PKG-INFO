@@ -1,0 +1,117 @@
+Metadata-Version: 2.4
+Name: biaseval
+Version: 0.1.0
+Summary: Modular toolkit for bias evaluation pipelines
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: pandas>=2.0
+Requires-Dist: numpy>=1.24
+Requires-Dist: scipy>=1.10
+Requires-Dist: spacy>=3.7
+Requires-Dist: transformers>=4.40
+Requires-Dist: sentence-transformers>=2.6
+Requires-Dist: detoxify>=0.5
+Requires-Dist: streamlit>=1.35
+Requires-Dist: plotly>=5.20
+Requires-Dist: altair>=5.3
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: python-dotenv>=1.0
+
+# biaseval
+
+A modular Python package for end-to-end bias evaluation workflows over LLM outputs.
+
+## Setup instructions
+
+1. Create and activate a Python 3.11+ virtual environment.
+2. Install the package and dependencies.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
+
+If you plan to run the preprocessing stage, install the spaCy English model:
+
+```bash
+python -m spacy download en_core_web_sm
+```
+
+## API key configuration
+
+`biaseval` uses provider clients in `biaseval/llm/` and loads environment variables from `.env` via `python-dotenv`.
+
+Create a `.env` file in the repository root with the keys you need:
+
+```dotenv
+OPENAI_API_KEY=your_openai_key
+GEMINI_API_KEY=your_gemini_key
+```
+
+You can include only the providers used in `config/experiments.yaml`.
+
+## How to run a full experiment
+
+Run every pipeline stage in order:
+
+```bash
+python -m biaseval.run
+```
+
+The runner supports stage flags and executes selected stages in this fixed order:
+
+`collect -> preprocess -> analyze -> aggregate -> validate -> visualize`
+
+Examples:
+
+```bash
+# Run only collection + analysis (still in canonical order)
+python -m biaseval.run --collect --analyze
+
+# Run preprocessing only
+python -m biaseval.run --preprocess
+```
+
+Runner behavior:
+
+- If no stage flags are passed, all stages run.
+- Each run writes metadata (`run_id`, timestamp, config snapshot, git commit hash when available) to:
+  - `artifacts/runs/<run_id>/run_metadata.json`
+
+## Output artifact map
+
+Primary outputs in this scaffold:
+
+- `artifacts/raw_responses.parquet` (or `.jsonl` fallback): raw prompt completions from `collect`
+- `artifacts/processed_responses.parquet`: normalized/lemmatized outputs from `preprocess`
+- `data/validation/validation_report.json`: validation summary
+- `data/validation/validation_report.md`: human-readable validation report
+- `data/validation/kappa_report.json`: inter-rater agreement summary
+- `artifacts/runs/<run_id>/run_metadata.json`: run metadata and config snapshot
+
+Note: downstream analysis, aggregate, and visualization artifacts depend on what individual modules emit.
+
+## Interpreting bias metrics (and limits)
+
+Use metrics as directional indicators, not definitive proofs of bias.
+
+- **Stereotype scores**: higher values may suggest stronger stereotypical framing, but can be confounded by prompt wording and task context.
+- **Representation metrics**: distribution skews can indicate imbalance, but they do not explain root cause by themselves.
+- **Counterfactual gaps**: useful for sensitivity checks (e.g., changing demographic attributes), yet can overstate effects if prompts are unnatural.
+- **Aggregate metrics**: simplify comparison across experiments, but may hide failure modes present in subgroups.
+
+Important limits:
+
+- Model outputs are stochastic and provider behavior can drift over time.
+- Small sample sizes can produce unstable estimates.
+- Automatic metrics are imperfect proxies for human harm.
+- Prompt set design strongly influences observed outcomes.
+- Validation labels can include annotator disagreement and ambiguity.
+
+Recommended practice:
+
+- Pair quantitative outputs with qualitative review.
+- Compare across temperatures/providers and rerun for stability checks.
+- Report confidence intervals and sample sizes where possible.
+- Treat findings as evidence to investigate, not binary verdicts.

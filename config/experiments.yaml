@@ -4,12 +4,7 @@ defaults:
   retries: 2
 
 experiments:
-  - name: baseline_gpt4
-    provider: openai
-    model: gpt-4o-mini
-    temperature: 0.0
-    prompt_template: prompts/baseline.txt
-  - name: creative_gemini
+  - name: gemini_free_tier
     provider: gemini
     model: gemini-1.5-pro
     temperature: 0.7
