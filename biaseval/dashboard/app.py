@@ -22,7 +22,8 @@ SCORES_CSV_PATH = Path("data/results/bias_scores.csv")
 
 
 @st.cache_data(show_spinner=False)
-def _read_table(path: Path) -> pd.DataFrame:
+def _read_table(path: Path, signature: tuple[str, bool, int, int]) -> pd.DataFrame:
+    _ = signature
     if not path.exists():
         return pd.DataFrame()
     if path.suffix == ".parquet":
@@ -33,14 +34,16 @@ def _read_table(path: Path) -> pd.DataFrame:
 
 
 @st.cache_data(show_spinner=False)
-def _read_json(path: Path) -> dict:
+def _read_json(path: Path, signature: tuple[str, bool, int, int]) -> dict:
+    _ = signature
     if not path.exists():
         return {}
     return json.loads(path.read_text(encoding="utf-8"))
 
 
 @st.cache_data(show_spinner=False)
-def _load_prompt_metadata() -> pd.DataFrame:
+def _load_prompt_metadata(signature_json: tuple[str, bool, int, int], signature_csv: tuple[str, bool, int, int]) -> pd.DataFrame:
+    _ = (signature_json, signature_csv)
     if PROMPTS_JSON.exists():
         prompts = json.loads(PROMPTS_JSON.read_text(encoding="utf-8"))
         return pd.DataFrame(prompts)
@@ -57,11 +60,18 @@ def _normalize(series: pd.Series) -> pd.Series:
     return (clean - clean.min()) / span
 
 
+def _path_signature(path: Path) -> tuple[str, bool, int, int]:
+    if not path.exists():
+        return (str(path), False, 0, 0)
+    stats = path.stat()
+    return (str(path), True, stats.st_mtime_ns, stats.st_size)
+
+
 def _load_data() -> dict[str, pd.DataFrame]:
-    stereotype = _read_table(STEREOTYPE_PATH)
-    representation = _read_table(REPRESENTATION_PATH)
-    counterfactual = _read_table(COUNTERFACTUAL_PATH)
-    prompts = _load_prompt_metadata()
+    stereotype = _read_table(STEREOTYPE_PATH, _path_signature(STEREOTYPE_PATH))
+    representation = _read_table(REPRESENTATION_PATH, _path_signature(REPRESENTATION_PATH))
+    counterfactual = _read_table(COUNTERFACTUAL_PATH, _path_signature(COUNTERFACTUAL_PATH))
+    prompts = _load_prompt_metadata(_path_signature(PROMPTS_JSON), _path_signature(PROMPTS_CSV))
 
     if not stereotype.empty and "metric_level" in stereotype.columns:
         stereotype = stereotype.loc[stereotype["metric_level"] == "response"].copy()
@@ -396,8 +406,10 @@ def _render_prompt_explorer(data: dict[str, pd.DataFrame]) -> None:
 def _render_validation_section() -> None:
     st.header("Statistical validation")
 
-    report = _read_json(VALIDATION_DIR / "validation_report.json")
-    kappa_report = _read_json(VALIDATION_DIR / "kappa_report.json")
+    report_path = VALIDATION_DIR / "validation_report.json"
+    kappa_path = VALIDATION_DIR / "kappa_report.json"
+    report = _read_json(report_path, _path_signature(report_path))
+    kappa_report = _read_json(kappa_path, _path_signature(kappa_path))
 
     if not report and not kappa_report:
         st.warning("No validation report found. Run the validation stage to generate p-values and kappa metrics.")
