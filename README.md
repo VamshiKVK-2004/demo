@@ -26,11 +26,21 @@ python -m spacy download en_core_web_sm
 Create a `.env` file in the repository root with the keys you need:
 
 ```dotenv
-OPENAI_API_KEY=your_openai_key
 GEMINI_API_KEY=your_gemini_key
+HUGGINGFACE_API_KEY=your_huggingface_token
+# Optional alias used by some Hugging Face tooling
+# HF_TOKEN=your_huggingface_token
 ```
 
 You can include only the providers used in `config/experiments.yaml`.
+
+### Getting a Hugging Face key for Meta Llama
+
+1. Sign in to [huggingface.co](https://huggingface.co/) and open **Settings → Access Tokens**.
+2. Click **New token**, choose at least `Read` permissions, and create the token.
+3. Copy the token immediately and set it as `HUGGINGFACE_API_KEY` in your local `.env`.
+4. Accept the model license for the Llama model you want (for example `meta-llama/Llama-3.1-8B-Instruct`) on its model page; access must be approved before inference works.
+5. Keep using provider `huggingface` in `config/experiments.yaml` with a Meta Llama model id.
 
 ## How to run a full experiment
 
@@ -52,6 +62,9 @@ python -m biaseval.run --collect --analyze
 
 # Run preprocessing only
 python -m biaseval.run --preprocess
+
+# Compare two models (e.g., Gemini + Meta Llama on Hugging Face) and generate visual outputs
+python -m biaseval.run --collect --preprocess --analyze --aggregate --validate --visualize
 ```
 
 Runner behavior:

@@ -13,6 +13,7 @@ import pandas as pd
 import yaml
 
 from biaseval.llm.gemini_client import GeminiClient
+from biaseval.llm.huggingface_client import HuggingFaceClient
 from biaseval.llm.openai_client import OpenAIClient
 from biaseval.schema import RAW_RESPONSE_COLUMNS, validate_raw_response_schema
 
@@ -22,6 +23,7 @@ BACKOFF_BASE_S = 1.5
 DEFAULT_MIN_INTERVAL_BY_PROVIDER_S = {
     "openai": 0.5,
     "gemini": 0.25,
+    "huggingface": 0.5,
 }
 
 
@@ -30,6 +32,8 @@ def _provider_has_credentials(provider: str) -> bool:
         return bool(os.getenv("OPENAI_API_KEY"))
     if provider == "gemini":
         return bool(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"))
+    if provider == "huggingface":
+        return bool(os.getenv("HUGGINGFACE_API_KEY") or os.getenv("HF_TOKEN"))
     return False
 
 
@@ -119,6 +123,7 @@ def run() -> None:
     clients = {
         "openai": OpenAIClient(),
         "gemini": GeminiClient(),
+        "huggingface": HuggingFaceClient(),
     }
     last_call_at: dict[str, float] = {provider: 0.0 for provider in clients}
 
