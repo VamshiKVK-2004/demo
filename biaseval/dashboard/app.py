@@ -78,7 +78,12 @@ def _load_data() -> dict[str, pd.DataFrame]:
     if not representation.empty and "metric_level" in representation.columns:
         representation = representation.copy()
     if not counterfactual.empty and "metric_level" in counterfactual.columns:
-        counterfactual = counterfactual.loc[counterfactual["metric_level"] == "prompt_triplet"].copy()
+        prompt_rows = counterfactual.loc[counterfactual["metric_level"] == "prompt_triplet"].copy()
+        if not prompt_rows.empty:
+            counterfactual = prompt_rows
+        else:
+            # Backward-compatible fallback for older artifacts without prompt_triplet rows.
+            counterfactual = counterfactual.loc[counterfactual["metric_level"] != "aggregate"].copy()
 
     return {
         "stereotype": stereotype,
@@ -123,15 +128,17 @@ def _overview_scores(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
                 )
 
     if not counterfactual.empty:
-        cf_grouped = (
-            counterfactual.groupby(["provider", "model", "temperature"], dropna=False)
-            .agg(counterfactual_score=("counterfactual_sensitivity_score", "mean"))
-            .reset_index()
-        )
-        if base is None:
-            base = cf_grouped
-        else:
-            base = base.merge(cf_grouped, on=["provider", "model", "temperature"], how="outer")
+        cf_required = {"provider", "model", "temperature", "counterfactual_sensitivity_score"}
+        if cf_required.issubset(counterfactual.columns):
+            cf_grouped = (
+                counterfactual.groupby(["provider", "model", "temperature"], dropna=False)
+                .agg(counterfactual_score=("counterfactual_sensitivity_score", "mean"))
+                .reset_index()
+            )
+            if base is None:
+                base = cf_grouped
+            else:
+                base = base.merge(cf_grouped, on=["provider", "model", "temperature"], how="outer")
 
     if base is None:
         return pd.DataFrame()
@@ -284,14 +291,22 @@ def _render_counterfactual_deep_dive(df: pd.DataFrame) -> None:
         st.info("No counterfactual metrics available.")
         return
 
-    fig = px.box(
-        df,
-        x="model",
-        y="counterfactual_sensitivity_score",
-        color="temperature",
-        title="Counterfactual Sensitivity Distribution",
-    )
-    st.plotly_chart(fig, use_container_width=True)
+    required_cols = {"model", "temperature", "counterfactual_sensitivity_score"}
+    missing_required = sorted(required_cols - set(df.columns))
+    if missing_required:
+        st.warning(
+            "Counterfactual artifact is missing required columns for the default chart: "
+            + ", ".join(missing_required)
+        )
+    else:
+        fig = px.box(
+            df,
+            x="model",
+            y="counterfactual_sensitivity_score",
+            color="temperature",
+            title="Counterfactual Sensitivity Distribution",
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
     delta_cols = [
         "delta_sentiment_score_counterfactual_minus_biased",
@@ -315,6 +330,10 @@ def _render_counterfactual_deep_dive(df: pd.DataFrame) -> None:
         )
         st.plotly_chart(hist, use_container_width=True)
 
+    if not present and missing_required:
+        st.caption("Available columns in counterfactual artifact")
+        st.dataframe(df.head(100), use_container_width=True)
+
 
 def _build_prompt_explorer(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
     prompts = data["prompts"].copy()
@@ -330,7 +349,8 @@ def _build_prompt_explorer(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
     else:
         stereo_prompt = pd.DataFrame()
 
-    if not counter.empty:
+    counter_required = {"provider", "model", "temperature", "prompt_id", "counterfactual_sensitivity_score"}
+    if not counter.empty and counter_required.issubset(counter.columns):
         counter_prompt = counter[
             ["provider", "model", "temperature", "prompt_id", "counterfactual_sensitivity_score"]
         ].copy()
