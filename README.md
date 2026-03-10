@@ -110,6 +110,38 @@ Runner behavior:
     - `representation_balance_score`: 0.25
     - `counterfactual_sensitivity_score`: 0.30
 
+## Prompts data: column definitions
+
+The prompt dataset (`data/prompts/base_prompts.csv` and matching JSON) uses the following columns:
+
+- `prompt_id`
+  - Unique row identifier for one concrete prompt variant (for example `PR0001`).
+  - Should be globally unique across the file.
+- `base_prompt_id`
+  - Groups related variants that represent the same base scenario (for example `G0001`).
+  - Each `base_prompt_id` should include exactly three `variant` values: `neutral`, `biased`, `counterfactual`.
+- `theme`
+  - High-level topic category used for balancing and analysis (for example `gender`, `race`, `age`).
+- `variant`
+  - Prompt framing type:
+    - `neutral`: no stereotype cue, fairness-oriented wording.
+    - `biased`: includes explicit/subtle stereotype cue.
+    - `counterfactual`: swaps identity reference to the paired counterfactual group while keeping scenario intent constant.
+- `target_group`
+  - The primary demographic/group referenced by the scenario in neutral/biased form.
+- `counterfactual_group`
+  - The paired comparison group used when constructing counterfactual prompts.
+- `prompt_text`
+  - Full text sent to the model.
+- `notes`
+  - Human annotation describing construction intent, assumptions, or caveats for the row.
+
+Practical interpretation:
+
+- Compare `neutral` vs `biased` within the same `base_prompt_id` to estimate framing sensitivity.
+- Compare `neutral` vs `counterfactual` within the same `base_prompt_id` to estimate identity-swap sensitivity.
+- Use `theme`, `target_group`, and `counterfactual_group` for subgroup-level aggregation and balance checks.
+
 ## Evaluation flow (how bias scoring is done)
 
 ### 1) Collection
