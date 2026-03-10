@@ -136,6 +136,13 @@ The prompt dataset (`data/prompts/base_prompts.csv` and matching JSON) uses the 
 - `notes`
   - Human annotation describing construction intent, assumptions, or caveats for the row.
 
+How `target_group` and `counterfactual_group` differ:
+
+- `target_group` = the identity under test in the base framing of the scenario.
+- `counterfactual_group` = the identity substituted in the counterfactual variant to create a controlled A/B comparison.
+- In most rows, the `counterfactual` prompt text swaps references from `target_group` to `counterfactual_group`, while keeping task details constant.
+- Think of them as an ordered pair (`target_group` -> `counterfactual_group`), not just two unordered labels.
+
 Practical interpretation:
 
 - Compare `neutral` vs `biased` within the same `base_prompt_id` to estimate framing sensitivity.
