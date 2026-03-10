@@ -10,7 +10,7 @@ A modular Python package for end-to-end bias evaluation workflows over LLM outpu
 2. **preprocess**: normalize text + tokenize/lemmatize for downstream metrics
 3. **analyze**: compute stereotype, representation, and counterfactual metrics
 4. **aggregate**: combine metrics into a weighted bias score
-5. **validate**: placeholder stage in runner (manual validation commands are provided below)
+5. **validate**: generate Mann-Whitney + Cohen's Kappa reports
 6. **visualize**: placeholder stage in runner
 
 Canonical stage order is enforced by the runner, even when you pass only specific stage flags.
@@ -185,11 +185,17 @@ Outputs:
 
 ### 5) Validation
 
-The pipeline `validate` stage currently logs a placeholder message. To generate real validation outputs, run the validation module directly:
+The pipeline `validate` stage now generates validation outputs automatically from aggregate artifacts:
+
+- `data/validation/validation_report.json`
+- `data/validation/validation_report.md`
+- `data/validation/kappa_report.json`
+
+You can still run the validation module directly:
 
 ```bash
 python -m biaseval.validation.stats \
-  --scores-path data/results/bias_scores.csv \
+  --scores-path artifacts/metrics_bias_response.parquet \
   --manual-labels-path data/manual_labels.csv \
   --output-json data/validation/validation_report.json \
   --output-md data/validation/validation_report.md

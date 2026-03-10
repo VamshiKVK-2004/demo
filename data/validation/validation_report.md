@@ -1,7 +1,7 @@
 # Validation Report
 
-Generated: `2026-03-03T16:14:43.202091+00:00`
-Scores source: `data/results/bias_scores.csv`
+Generated: `2026-03-10T18:35:00.822016+00:00`
+Scores source: `artifacts/metrics_bias_response.parquet`
 Manual labels source: `data/manual_labels.csv`
 
 ## Mann-Whitney U tests

@@ -288,7 +288,10 @@ def _render_representation_deep_dive(df: pd.DataFrame) -> None:
 def _render_counterfactual_deep_dive(df: pd.DataFrame) -> None:
     st.subheader("Counterfactual module")
     if df.empty:
-        st.info("No counterfactual metrics available.")
+        st.info(
+            "No counterfactual metrics available. Expected artifact: "
+            f"`{COUNTERFACTUAL_PATH}`. Run `python -m biaseval.run --analyze` after collection/preprocess."
+        )
         return
 
     required_cols = {"model", "temperature", "counterfactual_sensitivity_score"}
@@ -436,8 +439,13 @@ def _render_validation_section() -> None:
         return
 
     mann_whitney = pd.DataFrame(report.get("mann_whitney", []))
+    notes = report.get("notes", []) if isinstance(report, dict) else []
+
     if mann_whitney.empty:
         st.info("No Mann-Whitney test rows found in validation report.")
+        if notes:
+            st.caption("Validation notes")
+            st.write("\n".join([f"- {note}" for note in notes]))
     else:
         mann_whitney["significant"] = np.where(
             (~mann_whitney.get("skipped", False)) & (mann_whitney["p_value"] < 0.05),
@@ -468,7 +476,7 @@ def _render_validation_section() -> None:
     st.subheader("Inter-rater reliability (Cohen's Kappa)")
     st.caption("Interpretation: higher kappa indicates stronger agreement.")
     if kappa_rows.empty:
-        st.info("No pairwise kappa rows found yet.")
+        st.info("No pairwise kappa rows found yet. Add overlapping labels in `data/manual_labels.csv` (rater_1/rater_2/...).")
     else:
         st.dataframe(kappa_rows, use_container_width=True)
         kappa_rows["rater_pair"] = kappa_rows["rater_a"] + " vs " + kappa_rows["rater_b"]
