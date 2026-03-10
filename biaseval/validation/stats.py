@@ -128,8 +128,8 @@ def main() -> int:
     parser.add_argument(
         "--scores-path",
         type=Path,
-        default=Path("data/results/bias_scores.csv"),
-        help="CSV file with numeric bias scores and grouping columns.",
+        default=Path("artifacts/metrics_bias_response.parquet"),
+        help="CSV/Parquet file with numeric bias scores and grouping columns.",
     )
     parser.add_argument(
         "--score-column",
@@ -175,7 +175,10 @@ def main() -> int:
     }
 
     if args.scores_path.exists():
-        scores_df = pd.read_csv(args.scores_path)
+        if args.scores_path.suffix.lower() == ".parquet":
+            scores_df = pd.read_parquet(args.scores_path)
+        else:
+            scores_df = pd.read_csv(args.scores_path)
         missing_cols = [
             col for col in [args.score_column, *args.group_columns] if col not in scores_df.columns
         ]

@@ -1,6 +1,6 @@
 {
-  "generated_at_utc": "2026-03-03T16:14:43.202091+00:00",
-  "scores_source": "data/results/bias_scores.csv",
+  "generated_at_utc": "2026-03-10T18:35:00.822016+00:00",
+  "scores_source": "artifacts/metrics_bias_response.parquet",
   "manual_labels_source": "data/manual_labels.csv",
   "score_column": "bias_score",
   "group_columns": [
