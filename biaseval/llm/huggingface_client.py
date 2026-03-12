@@ -64,11 +64,32 @@ class HuggingFaceClient:
                 raw = json.loads(response.read().decode("utf-8"))
 
             text = ""
+            provider_error: str | None = None
             if isinstance(raw, list) and raw:
                 candidate = raw[0] or {}
                 text = candidate.get("generated_text", "")
             elif isinstance(raw, dict):
                 text = raw.get("generated_text", "")
+                if raw.get("error"):
+                    provider_error = str(raw["error"])
+                    if raw.get("estimated_time") is not None:
+                        provider_error += f" (estimated_time={raw['estimated_time']})"
+
+            if provider_error:
+                return {
+                    "response_text": "",
+                    "latency_ms": int((time.perf_counter() - start) * 1000),
+                    "error": provider_error,
+                    "raw": raw,
+                }
+
+            if not str(text).strip():
+                return {
+                    "response_text": "",
+                    "latency_ms": int((time.perf_counter() - start) * 1000),
+                    "error": "empty generation from Hugging Face Inference API",
+                    "raw": raw,
+                }
 
             return {
                 "response_text": text,

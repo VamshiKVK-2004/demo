@@ -67,6 +67,44 @@ def _process_row(row: pd.Series, nlp, extract_entities: bool) -> dict[str, objec
     }
 
 
+def _summarize_invalid_rows(raw_df: pd.DataFrame) -> str:
+    error_mask = raw_df["error"].fillna("").astype(str).str.strip().ne("")
+    empty_response_mask = raw_df["response_text"].fillna("").astype(str).str.strip().eq("")
+    both_mask = error_mask & empty_response_mask
+
+    summary_lines = [
+        f"total rows={len(raw_df)}",
+        f"rows with provider errors={int(error_mask.sum())}",
+        f"rows with empty responses={int(empty_response_mask.sum())}",
+        f"rows with both issues={int(both_mask.sum())}",
+    ]
+
+    provider_breakdown = (
+        raw_df.loc[error_mask]
+        .groupby("provider", dropna=False)
+        .size()
+        .sort_values(ascending=False)
+    )
+    if not provider_breakdown.empty:
+        formatted = ", ".join(
+            f"{provider}: {count}" for provider, count in provider_breakdown.items()
+        )
+        summary_lines.append(f"error rows by provider={formatted}")
+
+    top_errors = (
+        raw_df.loc[error_mask, "error"]
+        .astype(str)
+        .str.strip()
+        .value_counts()
+        .head(3)
+    )
+    if not top_errors.empty:
+        formatted = "; ".join(f"{message} ({count})" for message, count in top_errors.items())
+        summary_lines.append(f"top provider error messages={formatted}")
+
+    return " | ".join(summary_lines)
+
+
 def run() -> None:
     """Load raw responses, preprocess deterministically, and persist processed artifact."""
     if not RAW_ARTIFACT_PATH.exists():
@@ -78,6 +116,7 @@ def run() -> None:
 
     raw_df = pd.read_parquet(RAW_ARTIFACT_PATH)
     raw_df = validate_raw_response_schema(raw_df)
+    diagnostics = _summarize_invalid_rows(raw_df)
 
     valid_mask = (
         raw_df["error"].fillna("").astype(str).str.strip().eq("")
@@ -91,9 +130,11 @@ def run() -> None:
         )
     raw_df = raw_df.loc[valid_mask].copy()
     if raw_df.empty:
+        print(f"[biaseval] preprocess diagnostics: {diagnostics}")
         raise ValueError(
             "No valid raw responses available after filtering errors/empty outputs. "
-            "Check provider credentials and collect-stage logs."
+            "Check provider credentials and collect-stage logs. "
+            f"Diagnostics: {diagnostics}."
         )
 
     nlp = _build_nlp(extract_entities=extract_entities)
