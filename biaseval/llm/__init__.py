@@ -195,4 +195,12 @@ def run() -> None:
                     print(f"[biaseval] collect progress: {completed_requests}/{total_requests} requests")
 
     artifact = _persist_results(rows, Path("artifacts"))
+    error_series = pd.Series([(row.get("error") or "").strip() for row in rows], dtype="object")
+    error_count = int(error_series.ne("").sum())
+    success_count = len(rows) - error_count
     print(f"[biaseval] wrote {len(rows)} raw responses to {artifact}")
+    print(f"[biaseval] collect summary: success={success_count} error={error_count}")
+    if error_count:
+        top_errors = error_series[error_series.ne("")].value_counts().head(5)
+        for message, count in top_errors.items():
+            print(f"[biaseval] collect top_error[{count}]: {message}")

@@ -62,6 +62,22 @@ class GeminiClient:
             candidates = raw.get("candidates", [])
             parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
             text = "".join(part.get("text", "") for part in parts)
+
+            if not str(text).strip():
+                prompt_feedback = raw.get("promptFeedback") or {}
+                block_reason = prompt_feedback.get("blockReason")
+                finish_reason = candidates[0].get("finishReason") if candidates else None
+                reason_bits = [
+                    value for value in [block_reason, finish_reason] if value
+                ]
+                reason = ", ".join(reason_bits) if reason_bits else "empty response from Gemini"
+                return {
+                    "response_text": "",
+                    "latency_ms": int((time.perf_counter() - start) * 1000),
+                    "error": f"gemini empty output ({reason})",
+                    "raw": raw,
+                }
+
             return {
                 "response_text": text,
                 "latency_ms": int((time.perf_counter() - start) * 1000),
