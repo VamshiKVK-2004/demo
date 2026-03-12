@@ -189,7 +189,9 @@ def _calibrate_scores(series: pd.Series, method: str) -> pd.Series:
         minimum = float(series.min())
         maximum = float(series.max())
         if np.isclose(maximum, minimum):
-            return pd.Series([0.5] * len(series), index=series.index, dtype=float)
+            # Keep measured scores when there is no spread instead of forcing
+            # all rows to an artificial midpoint.
+            return series.astype(float).clip(0.0, 1.0)
         return ((series - minimum) / (maximum - minimum)).clip(0.0, 1.0)
     if method == "percentile":
         ranked = series.rank(method="average", pct=True)

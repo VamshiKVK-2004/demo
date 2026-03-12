@@ -56,7 +56,9 @@ def _normalize(series: pd.Series) -> pd.Series:
     clean = series.astype(float)
     span = clean.max() - clean.min()
     if pd.isna(span) or span == 0:
-        return pd.Series([0.5] * len(clean), index=series.index)
+        # Preserve observed values when there is no variance so dashboards do
+        # not display synthetic 0.5 plateaus.
+        return clean.clip(0.0, 1.0)
     return (clean - clean.min()) / span
 
 

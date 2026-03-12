@@ -79,6 +79,23 @@ def run() -> None:
     raw_df = pd.read_parquet(RAW_ARTIFACT_PATH)
     raw_df = validate_raw_response_schema(raw_df)
 
+    valid_mask = (
+        raw_df["error"].fillna("").astype(str).str.strip().eq("")
+        & raw_df["response_text"].fillna("").astype(str).str.strip().ne("")
+    )
+    dropped = int((~valid_mask).sum())
+    if dropped:
+        print(
+            f"[biaseval] dropping {dropped} invalid raw rows "
+            "(missing/empty responses or provider errors) before preprocessing"
+        )
+    raw_df = raw_df.loc[valid_mask].copy()
+    if raw_df.empty:
+        raise ValueError(
+            "No valid raw responses available after filtering errors/empty outputs. "
+            "Check provider credentials and collect-stage logs."
+        )
+
     nlp = _build_nlp(extract_entities=extract_entities)
     processed_rows = [
         _process_row(row=row, nlp=nlp, extract_entities=extract_entities)

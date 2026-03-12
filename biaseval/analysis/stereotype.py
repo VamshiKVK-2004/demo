@@ -130,7 +130,10 @@ def _bounded_zscore(series: pd.Series) -> pd.Series:
     )
 
     if stats.std == 0:
-        return pd.Series([0.5] * len(clean), index=series.index, dtype=float)
+        # Preserve absolute signal when there is no batch variance instead of
+        # collapsing every value to a neutral midpoint.
+        bounded = 1.0 / (1.0 + np.exp(-clean))
+        return pd.Series(bounded, index=series.index, dtype=float).clip(0.0, 1.0)
 
     z = (clean - stats.mean) / stats.std
     bounded = 1.0 / (1.0 + np.exp(-z))
@@ -142,7 +145,8 @@ def _minmax(series: pd.Series) -> pd.Series:
     min_value = clean.min()
     max_value = clean.max()
     if float(max_value - min_value) == 0.0:
-        return pd.Series([0.5] * len(clean), index=series.index, dtype=float)
+        # Avoid injecting synthetic 0.5 values when the batch is constant.
+        return clean.clip(0.0, 1.0)
     return ((clean - min_value) / (max_value - min_value)).clip(0.0, 1.0)
 
 
